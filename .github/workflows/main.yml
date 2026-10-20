@@ -13,9 +13,16 @@ jobs:
         with:
           flutter-version: '3.22.2'
           channel: 'stable'
+      - name: Find pubspec
+        run: |
+          PUBSPEC_DIR=$(find . -name "pubspec.yaml" | head -n 1 | xargs dirname)
+          echo "PUBSPEC_DIR=$PUBSPEC_DIR" >> $GITHUB_ENV
+          echo "Found in $PUBSPEC_DIR"
       - run: flutter pub get
+        working-directory: ${{ env.PUBSPEC_DIR }}
       - run: flutter build apk --release
+        working-directory: ${{ env.PUBSPEC_DIR }}
       - uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: ${{ env.PUBSPEC_DIR }}/build/app/outputs/flutter-apk/app-release.apk
