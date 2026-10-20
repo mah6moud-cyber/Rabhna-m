@@ -1,0 +1,15 @@
+name: فحص المشروع
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: List files
+        run: |
+          pwd
+          ls -la
+          echo "--- find pubspec ---"
+          find . -name "pubspec.yaml"
+          echo "--- find main.dart ---"
+          find . -name "main.dart"
