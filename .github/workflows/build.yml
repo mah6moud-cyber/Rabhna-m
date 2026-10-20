@@ -28,7 +28,8 @@ jobs:
           flutter create --org com.rabhna --project-name rabhna_m --platforms android app
           cp -r rabhna_m/lib/. app/lib/
           cp rabhna_m/pubspec.yaml app/pubspec.yaml
-   sed -i 's/intl: ^0.19.0/intl: any/' app/pubspec.yaml
+          sed -i 's/intl: ^0.19.0/intl: any/' app/pubspec.yaml
+
       - name: Add google-services.json
         env:
           GSJ: ${{ secrets.GOOGLE_SERVICES_JSON }}
