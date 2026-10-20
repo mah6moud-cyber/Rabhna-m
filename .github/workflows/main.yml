@@ -13,11 +13,13 @@ jobs:
         with:
           flutter-version: '3.22.2'
           channel: 'stable'
-      - name: Find pubspec
+      - name: Find correct project
         run: |
-          PUBSPEC_DIR=$(find . -name "pubspec.yaml" | head -n 1 | xargs dirname)
+          PUBSPEC_DIR=$(find . -type f -name "pubspec.yaml" -exec sh -c 'if [ -f "$(dirname {})/lib/main.dart" ]; then echo $(dirname {}); fi' \; | head -n 1)
           echo "PUBSPEC_DIR=$PUBSPEC_DIR" >> $GITHUB_ENV
-          echo "Found in $PUBSPEC_DIR"
+          echo "Found project in: $PUBSPEC_DIR"
+          ls -la $PUBSPEC_DIR
+          ls -la $PUBSPEC_DIR/lib
       - run: flutter pub get
         working-directory: ${{ env.PUBSPEC_DIR }}
       - run: flutter build apk --release
