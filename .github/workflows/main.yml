@@ -1,4 +1,3 @@
-انسخ ده كله:
 name: بناء ملف APK
 on: [push]
 jobs:
