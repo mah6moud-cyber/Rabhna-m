@@ -1,17 +1,87 @@
-name: Build
-on: [push]
+name: Build Rabhna-M
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: "17"
+
       - uses: subosito/flutter-action@v2
-      - run: flutter build apk --debug
+        with:
+          channel: stable
+          cache: true
+
+      - name: Unzip project and create Flutter app
+        run: |
+          ls -la
+          unzip -o rabhna_m.zip
+          flutter create --org com.rabhna --project-name rabhna_m --platforms android app
+          cp -r rabhna_m/lib/. app/lib/
+          cp rabhna_m/pubspec.yaml app/pubspec.yaml
+
+      - name: Add google-services.json
+        env:
+          GSJ: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: printf '%s' "$GSJ" > app/android/app/google-services.json
+
+      - name: Patch Android Gradle files
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          root = pathlib.Path('app/android')
+          for name in ['settings.gradle.kts', 'settings.gradle']:
+              p = root / name
+              if p.exists():
+                  s = p.read_text()
+                  if 'google-services' not in s:
+                      if name.endswith('.kts'):
+                          line = '    id("com.google.gms.google-services") version "4.4.2" apply false\n'
+                      else:
+                          line = '    id "com.google.gms.google-services" version "4.4.2" apply false\n'
+                      s = re.sub(r'(plugins\s*\{\n)', lambda m: m.group(1) + line, s, count=1)
+                      p.write_text(s)
+          for name in ['app/build.gradle.kts', 'app/build.gradle']:
+              p = root / name
+              if p.exists():
+                  s = p.read_text()
+                  if name.endswith('.kts'):
+                      line = '    id("com.google.gms.google-services")\n'
+                  else:
+                      line = '    id "com.google.gms.google-services"\n'
+                  if 'google-services' not in s:
+                      s = re.sub(r'(plugins\s*\{\n)', lambda m: m.group(1) + line, s, count=1)
+                  s = re.sub(r'minSdk\s*=\s*flutter\.minSdkVersion', 'minSdk = 23', s)
+                  s = re.sub(r'minSdkVersion\s+flutter\.minSdkVersion', 'minSdkVersion 23', s)
+                  s = re.sub(r'targetSdk\s*=\s*flutter\.targetSdkVersion', 'targetSdk = 36', s)
+                  s = re.sub(r'targetSdkVersion\s+flutter\.targetSdkVersion', 'targetSdkVersion 36', s)
+                  p.write_text(s)
+          PY
+
+      - name: Get packages
+        working-directory: app
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: app
+        run: flutter build apk --release
+
+      - name: Build AAB
+        working-directory: app
+        run: flutter build appbundle --release
+
       - uses: actions/upload-artifact@v4
         with:
-          name: APK
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: rabhna-m-build
+          path: |
+            app/build/app/outputs/flutter-apk/app-release.apk
+            app/build/app/outputs/bundle/release/app-release.aab
